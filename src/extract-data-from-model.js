@@ -1,4 +1,5 @@
 import {
+  aliasSymbol,
   actionOnSymbol,
   actionSymbol,
   computedSymbol,
@@ -12,6 +13,7 @@ import { get, isPlainObject, set } from './lib';
 import { extractPersistConfig } from './persistence';
 import { createActionCreator } from './actions';
 import { createThunkHandler, createThunkActionsCreator } from './thunks';
+import { createAliasHandler, createAliasActionsCreator } from './alias';
 import { bindListenerdefs } from './listeners';
 import { createComputedPropertyBinder } from './computed-properties';
 import { createEffectHandler, createEffectActionsCreator } from './effects';
@@ -21,6 +23,7 @@ export default function extractDataFromModel(
   initialState,
   injections,
   _r,
+  isProxyStore,
 ) {
   const _dS = initialState;
   const _aCD = {};
@@ -104,11 +107,21 @@ export default function extractDataFromModel(
               set(path, _aC, def.actionCreator);
             }
           }
-        } else if (value[thunkSymbol] || value[thunkOnSymbol]) {
+        } else if (
+          value[thunkSymbol] ||
+          value[thunkOnSymbol] ||
+          value[aliasSymbol]
+        ) {
           const def = { ...value };
 
           // Determine the category of the thunk
-          const category = def[thunkSymbol] ? '@thunk' : '@thunkOn';
+          let category = '@thunk';
+
+          if (def[thunkOnSymbol]) {
+            category = '@thunkOn';
+          } else if (def[aliasSymbol]) {
+            category = '@alias';
+          }
 
           // Establish the meta data describing the thunk
           const type = `${category}.${meta.path.join('.')}`;
@@ -130,7 +143,9 @@ export default function extractDataFromModel(
           set(path, actionThunks, def.thunkHandler);
 
           // Create the "action creator" function
-          def.actionCreator = createThunkActionsCreator(def, _r);
+          def.actionCreator = isProxyStore
+            ? createAliasActionsCreator(def, _r)
+            : createThunkActionsCreator(def, _r);
 
           // Create a bidirectional relationship of the def/actionCreator
           def.actionCreator.def = def;

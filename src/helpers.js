@@ -8,6 +8,7 @@ import {
   reducerSymbol,
   thunkOnSymbol,
   thunkSymbol,
+  aliasSymbol,
 } from './constants';
 
 export const debug = (state) => {
@@ -74,6 +75,11 @@ export const thunkOn = (targetResolver, fn) => ({
 
 export const thunk = (fn) => ({
   [thunkSymbol]: true,
+  fn,
+});
+
+export const alias = (fn) => ({
+  [aliasSymbol]: true,
   fn,
 });
 

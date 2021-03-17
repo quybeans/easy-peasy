@@ -6,3 +6,4 @@ export const persistSymbol = '$_p';
 export const reducerSymbol = '$_r';
 export const thunkOnSymbol = '$_tO';
 export const thunkSymbol = '$_t';
+export const aliasSymbol = '$_alias';

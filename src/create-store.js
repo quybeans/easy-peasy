@@ -16,6 +16,7 @@ import { createComputedPropertiesMiddleware } from './computed-properties';
 import { createListenerMiddleware } from './listeners';
 import { clone } from './lib';
 import { createEffectsMiddleware } from './effects';
+import { Store } from 'webext-redux';
 
 export function createStore(model, options = {}) {
   const modelClone = clone(model);
@@ -31,6 +32,8 @@ export function createStore(model, options = {}) {
     name: storeName = `EasyPeasyStore`,
     version = 0,
     reducerEnhancer = (rootReducer) => rootReducer,
+    isProxyStore = false,
+    proxyStoreOptions = {},
   } = options;
 
   const bindReplaceState = (modelDef) => ({
@@ -53,7 +56,13 @@ export function createStore(model, options = {}) {
   const replaceState = (nextState) => _r._i._aCD['@action.ePRS'](nextState);
 
   const bindStoreInternals = (state = {}) => {
-    const data = extractDataFromModel(modeldef, state, injections, _r);
+    const data = extractDataFromModel(
+      modeldef,
+      state,
+      injections,
+      _r,
+      isProxyStore,
+    );
     _r._i = {
       ...data,
       reducer: reducerEnhancer(
@@ -94,11 +103,16 @@ export function createStore(model, options = {}) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
   }
 
-  const store = reduxCreateStore(
-    _r._i.reducer,
-    _r._i._dS,
-    composeEnhancers(applyMiddleware(...easyPeasyMiddleware), ...enhancers),
-  );
+  let store;
+  if (isProxyStore) {
+    store = new Store(proxyStoreOptions);
+  } else {
+    store = reduxCreateStore(
+      _r._i.reducer,
+      _r._i._dS,
+      composeEnhancers(applyMiddleware(...easyPeasyMiddleware), ...enhancers),
+    );
+  }
 
   store.subscribe(() => {
     _r._i._cS.isInReducer = false;
