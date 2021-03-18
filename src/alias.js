@@ -106,3 +106,32 @@ export function createAliasActionsCreator(def, _r) {
 
   return actionCreator;
 }
+
+export const aliasExecuterMiddleware = () => (next) => (action) => {
+  if (typeof action.type === 'string') {
+    const pathArray = action.type.split('.');
+
+    if (pathArray[0] === '@alias') {
+      pathArray.shift();
+      const actions = store.getActions();
+      const aliasFunction = get(pathArray, actions);
+
+      if (aliasFunction) {
+        return new Promise((resolve, reject) => {
+          aliasFunction(action.payload)
+            .then((result) => {
+              action.payload = result;
+              resolve(next(action));
+              return;
+            })
+            .catch((error) => {
+              reject({ message: error });
+              return;
+            });
+        });
+      }
+    }
+  }
+
+  return next(action);
+};

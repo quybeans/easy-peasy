@@ -1159,4 +1159,21 @@ export function persist<Model extends object = {}>(
 
 export function useStoreRehydrated(): boolean;
 
+export function alias<
+  Model extends object = {},
+  Payload = undefined,
+  Injections = any,
+  StoreModel extends object = {},
+  Result = any
+>(
+  alias: (
+    actions: Actions<Model>,
+    payload: Payload,
+    helpers: Helpers<Model, StoreModel, Injections>,
+  ) => Result,
+): Thunk<Model, Payload, Injections, StoreModel, Result>;
+
+export const aliasExecuterMiddleware: Middleware;
+
 // #endregion
+

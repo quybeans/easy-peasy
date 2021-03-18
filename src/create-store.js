@@ -120,6 +120,7 @@ export function createStore(model, options = {}) {
 
   _r.dispatch = store.dispatch;
   _r.getState = store.getState;
+  _r.ready = store.ready;
 
   const bindActionCreators = () => {
     Object.keys(store.dispatch).forEach((actionsKey) => {
@@ -168,6 +169,7 @@ export function createStore(model, options = {}) {
         resolveRehydration: () => addModelRehydration,
       };
     },
+    ready: _r.ready,
     clearMockedActions: () => {
       mockedActions = [];
     },
