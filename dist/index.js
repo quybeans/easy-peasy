@@ -1892,7 +1892,7 @@ function createStore(model, options) {
     middleware,
   );
 
-  if (isProxyStore) {
+  if (!isProxyStore) {
     easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
   }
 
