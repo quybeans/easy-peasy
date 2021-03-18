@@ -102,6 +102,9 @@ export function createStore(model, options = {}) {
   if (mockActions) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
   }
+  if (isProxyStore) {
+    createAliasExecuterMiddleware(_r);
+  }
 
   let store;
   if (isProxyStore) {

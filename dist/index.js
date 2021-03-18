@@ -1204,40 +1204,6 @@ function createAliasActionsCreator(def, _r) {
   actionCreator.startType = def.meta.startType;
   return actionCreator;
 }
-var aliasExecuterMiddleware = function aliasExecuterMiddleware() {
-  return function (next) {
-    return function (action) {
-      if (typeof action.type === 'string') {
-        var pathArray = action.type.split('.');
-
-        if (pathArray[0] === '@alias') {
-          pathArray.shift();
-          var actions = store.getActions();
-          var aliasFunction = get(pathArray, actions);
-
-          if (aliasFunction) {
-            return new Promise(function (resolve, reject) {
-              aliasFunction(action.payload)
-                .then(function (result) {
-                  action.payload = result;
-                  resolve(next(action));
-                  return;
-                })
-                .catch(function (error) {
-                  reject({
-                    message: error,
-                  });
-                  return;
-                });
-            });
-          }
-        }
-      }
-
-      return next(action);
-    };
-  };
-};
 
 function createListenerMiddleware(_r) {
   return function () {
@@ -1899,6 +1865,10 @@ function createStore(model, options) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
   }
 
+  if (isProxyStore) {
+    createAliasExecuterMiddleware(_r);
+  }
+
   var store;
 
   if (isProxyStore) {
@@ -2169,7 +2139,6 @@ export {
   action,
   actionOn,
   alias,
-  aliasExecuterMiddleware,
   computed,
   createContextStore,
   createStore,

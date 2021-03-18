@@ -107,13 +107,15 @@ export function createAliasActionsCreator(def, _r) {
   return actionCreator;
 }
 
-export const aliasExecuterMiddleware = () => (next) => (action) => {
+export const createAliasExecuterMiddleware = (_r) => () => (next) => (
+  action,
+) => {
   if (typeof action.type === 'string') {
     const pathArray = action.type.split('.');
 
     if (pathArray[0] === '@alias') {
       pathArray.shift();
-      const actions = store.getActions();
+      const actions = _r._i._aC;
       const aliasFunction = get(pathArray, actions);
 
       if (aliasFunction) {
