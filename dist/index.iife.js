@@ -1218,6 +1218,44 @@ var easyPeasy = (function (
     actionCreator.startType = def.meta.startType;
     return actionCreator;
   }
+  var createAliasExecuterMiddleware = function createAliasExecuterMiddleware(
+    _r,
+  ) {
+    return function () {
+      return function (next) {
+        return function (action) {
+          if (typeof action.type === 'string') {
+            var pathArray = action.type.split('.');
+
+            if (pathArray[0] === '@alias') {
+              pathArray.shift();
+              var actions = _r._i._aC;
+              var aliasFunction = get(pathArray, actions);
+
+              if (aliasFunction) {
+                return new Promise(function (resolve, reject) {
+                  aliasFunction(action.payload)
+                    .then(function (result) {
+                      action.payload = result;
+                      resolve(next(action));
+                      return;
+                    })
+                    .catch(function (error) {
+                      reject({
+                        message: error,
+                      });
+                      return;
+                    });
+                });
+              }
+            }
+          }
+
+          return next(action);
+        };
+      };
+    };
+  };
 
   function createListenerMiddleware(_r) {
     return function () {
@@ -1880,6 +1918,10 @@ var easyPeasy = (function (
 
     if (mockActions) {
       easyPeasyMiddleware.push(mockActionsMiddleware);
+    }
+
+    if (isProxyStore) {
+      easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
     }
 
     var store;
