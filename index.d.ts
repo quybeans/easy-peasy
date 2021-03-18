@@ -10,6 +10,7 @@ import {
   StoreEnhancer,
 } from 'redux';
 import { O } from 'ts-toolbelt';
+import { PatchStrategy } from 'webext-redux';
 
 export type ReduxAction = AnyAction;
 
@@ -350,6 +351,15 @@ export function createStore<
 >(
   model: StoreModel,
   config?: EasyPeasyConfig<InitialState, Injections>,
+  proxyStoreConfig?: {
+    portName?: string,
+    state?: any,
+    extensionId?: string,
+    serializer?: Function,
+    deserializer?: Function,
+    patchStrategy?: PatchStrategy
+  }
+  ,
 ): Store<StoreModel, EasyPeasyConfig<InitialState, Injections>>;
 
 /**
@@ -419,6 +429,7 @@ export interface Store<
   getActions: () => Actions<StoreModel>;
   getListeners: () => Listeners<StoreModel>;
   getMockedActions: () => MockedAction[];
+  ready: Promise<void>;
   persist: {
     clear: () => Promise<void>;
     flush: () => Promise<void>;
