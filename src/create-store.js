@@ -94,17 +94,20 @@ export function createStore(model, options = {}) {
   const easyPeasyMiddleware = [
     createComputedPropertiesMiddleware(_r),
     ...middleware,
+  ];
+  if (isProxyStore) {
+    easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
+  }
+
+  easyPeasyMiddleware.push(
     reduxThunk,
     createListenerMiddleware(_r),
     createEffectsMiddleware(_r),
     persistMiddleware,
-  ];
+  );
 
   if (mockActions) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
-  }
-  if (isProxyStore) {
-    easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
   }
 
   let store;

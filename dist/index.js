@@ -1888,21 +1888,23 @@ function createStore(model, options) {
         })
       : compose);
   bindStoreInternals(initialState);
-  var easyPeasyMiddleware = [
-    createComputedPropertiesMiddleware(_r),
-  ].concat(middleware, [
+  var easyPeasyMiddleware = [createComputedPropertiesMiddleware(_r)].concat(
+    middleware,
+  );
+
+  if (isProxyStore) {
+    easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
+  }
+
+  easyPeasyMiddleware.push(
     reduxThunk,
     createListenerMiddleware(_r),
     createEffectsMiddleware(_r),
     persistMiddleware,
-  ]);
+  );
 
   if (mockActions) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
-  }
-
-  if (isProxyStore) {
-    easyPeasyMiddleware.push(createAliasExecuterMiddleware(_r));
   }
 
   var store;
