@@ -17,6 +17,7 @@ import { createListenerMiddleware } from './listeners';
 import { clone } from './lib';
 import { createEffectsMiddleware } from './effects';
 import { Store } from 'webext-redux';
+import { createAliasExecuterMiddleware } from './alias';
 
 export function createStore(model, options = {}) {
   const modelClone = clone(model);
