@@ -1871,10 +1871,6 @@ function createStore(model, options) {
     easyPeasyMiddleware.push(mockActionsMiddleware);
   }
 
-  if (isProxyStore) {
-    createAliasExecuterMiddleware(_r);
-  }
-
   var store;
 
   if (isProxyStore) {

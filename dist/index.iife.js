@@ -1882,10 +1882,6 @@ var easyPeasy = (function (
       easyPeasyMiddleware.push(mockActionsMiddleware);
     }
 
-    if (isProxyStore) {
-      createAliasExecuterMiddleware(_r);
-    }
-
     var store;
 
     if (isProxyStore) {
