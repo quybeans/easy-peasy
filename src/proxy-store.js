@@ -27,6 +27,14 @@ const defaultOpts = {
   patchStrategy: shallowDiff,
 };
 
+class BackgroundError extends Error {
+  constructor(message) {
+    super();
+    this.name = 'BackgroundError';
+    this.message = message;
+  }
+}
+
 export class ProxyStore {
   /**
    * Creates a new Proxy store
@@ -181,14 +189,14 @@ export class ProxyStore {
         },
         null,
         (resp) => {
-          const { error, value } = resp;
+          if (resp) {
+            const { error, value } = resp;
 
-          if (error) {
-            const bgErr = new Error(`${backgroundErrPrefix}${error}`);
-
-            reject({ bgErr, message: error });
-          } else {
-            resolve(value && value.payload);
+            if (error) {
+              reject(new BackgroundError(error));
+            } else {
+              resolve(value && value.payload);
+            }
           }
         },
       );

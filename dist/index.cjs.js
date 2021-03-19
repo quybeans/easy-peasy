@@ -7,6 +7,8 @@ var _objectSpread = require('@babel/runtime/helpers/objectSpread2');
 var redux = require('redux');
 var reduxThunk = require('redux-thunk');
 var immer = require('immer');
+var _inheritsLoose = require('@babel/runtime/helpers/inheritsLoose');
+var _wrapNativeSuper = require('@babel/runtime/helpers/wrapNativeSuper');
 require('lodash.assignin');
 var constants = require('webext-redux/lib/constants');
 var serialization = require('webext-redux/lib/serialization');
@@ -20,6 +22,12 @@ function _interopDefaultLegacy(e) {
 var React__default = /*#__PURE__*/ _interopDefaultLegacy(React);
 var _objectSpread__default = /*#__PURE__*/ _interopDefaultLegacy(_objectSpread);
 var reduxThunk__default = /*#__PURE__*/ _interopDefaultLegacy(reduxThunk);
+var _inheritsLoose__default = /*#__PURE__*/ _interopDefaultLegacy(
+  _inheritsLoose,
+);
+var _wrapNativeSuper__default = /*#__PURE__*/ _interopDefaultLegacy(
+  _wrapNativeSuper,
+);
 var shallowDiff__default = /*#__PURE__*/ _interopDefaultLegacy(shallowDiff);
 
 var StoreContext = React.createContext();
@@ -1774,9 +1782,6 @@ function extractDataFromModel(
   };
 }
 
-var backgroundErrPrefix =
-  '\nLooks like there is an error in the background page. ' +
-  'You might want to inspect your background page for more details.\n';
 var defaultOpts = {
   portName: constants.DEFAULT_PORT_NAME,
   state: {},
@@ -1785,13 +1790,29 @@ var defaultOpts = {
   deserializer: serialization.noop,
   patchStrategy: shallowDiff__default['default'],
 };
+
+var BackgroundError = /*#__PURE__*/ (function (_Error) {
+  _inheritsLoose__default['default'](BackgroundError, _Error);
+
+  function BackgroundError(message) {
+    var _this;
+
+    _this = _Error.call(this) || this;
+    _this.name = 'BackgroundError';
+    _this.message = message;
+    return _this;
+  }
+
+  return BackgroundError;
+})(/*#__PURE__*/ _wrapNativeSuper__default['default'](Error));
+
 var ProxyStore = /*#__PURE__*/ (function () {
   /**
    * Creates a new Proxy store
    * @param  {object} options An object of form {portName, state, extensionId, serializer, deserializer, diffStrategy}, where `portName` is a required string and defines the name of the port for state transition changes, `state` is the initial state of this store (default `{}`) `extensionId` is the extension id as defined by browserAPI when extension is loaded (default `''`), `serializer` is a function to serialize outgoing message payloads (default is passthrough), `deserializer` is a function to deserialize incoming message payloads (default is passthrough), and patchStrategy is one of the included patching strategies (default is shallow diff) or a custom patching function.
    */
   function ProxyStore(_temp) {
-    var _this = this;
+    var _this2 = this;
 
     var _ref = _temp === void 0 ? defaultOpts : _temp,
       _ref$portName = _ref.portName,
@@ -1839,7 +1860,7 @@ var ProxyStore = /*#__PURE__*/ (function () {
     this.portName = portName;
     this.readyResolved = false;
     this.readyPromise = new Promise(function (resolve) {
-      return (_this.readyResolve = resolve);
+      return (_this2.readyResolve = resolve);
     });
     this.browserAPI = util.getBrowserAPI();
     this.extensionId = extensionId; // keep the extensionId as an instance variable
@@ -1857,21 +1878,22 @@ var ProxyStore = /*#__PURE__*/ (function () {
 
     this.serializedPortListener = serialization.withDeserializer(deserializer)(
       function () {
-        var _this$port$onMessage;
+        var _this2$port$onMessage;
 
-        return (_this$port$onMessage = _this.port.onMessage).addListener.apply(
-          _this$port$onMessage,
+        return (_this2$port$onMessage =
+          _this2.port.onMessage).addListener.apply(
+          _this2$port$onMessage,
           arguments,
         );
       },
     );
     this.serializedMessageSender = serialization.withSerializer(serializer)(
       function () {
-        var _this$browserAPI$runt;
+        var _this2$browserAPI$run;
 
-        return (_this$browserAPI$runt =
-          _this.browserAPI.runtime).sendMessage.apply(
-          _this$browserAPI$runt,
+        return (_this2$browserAPI$run =
+          _this2.browserAPI.runtime).sendMessage.apply(
+          _this2$browserAPI$run,
           arguments,
         );
       },
@@ -1884,18 +1906,18 @@ var ProxyStore = /*#__PURE__*/ (function () {
     this.serializedPortListener(function (message) {
       switch (message.type) {
         case constants.STATE_TYPE:
-          _this.replaceState(message.payload);
+          _this2.replaceState(message.payload);
 
-          if (!_this.readyResolved) {
-            _this.readyResolved = true;
+          if (!_this2.readyResolved) {
+            _this2.readyResolved = true;
 
-            _this.readyResolve();
+            _this2.readyResolve();
           }
 
           break;
 
         case constants.PATCH_STATE_TYPE:
-          _this.patchState(message.payload);
+          _this2.patchState(message.payload);
 
           break;
       }
@@ -1928,11 +1950,11 @@ var ProxyStore = /*#__PURE__*/ (function () {
    */
 
   _proto.subscribe = function subscribe(listener) {
-    var _this2 = this;
+    var _this3 = this;
 
     this.listeners.push(listener);
     return function () {
-      _this2.listeners = _this2.listeners.filter(function (l) {
+      _this3.listeners = _this3.listeners.filter(function (l) {
         return l !== listener;
       });
     };
@@ -1981,29 +2003,27 @@ var ProxyStore = /*#__PURE__*/ (function () {
    */
 
   _proto.dispatch = function dispatch(data) {
-    var _this3 = this;
+    var _this4 = this;
 
     return new Promise(function (resolve, reject) {
-      _this3.serializedMessageSender(
-        _this3.extensionId,
+      _this4.serializedMessageSender(
+        _this4.extensionId,
         {
           type: constants.DISPATCH_TYPE,
-          portName: _this3.portName,
+          portName: _this4.portName,
           payload: data,
         },
         null,
         function (resp) {
-          var error = resp.error,
-            value = resp.value;
+          if (resp) {
+            var error = resp.error,
+              value = resp.value;
 
-          if (error) {
-            var bgErr = new Error('' + backgroundErrPrefix + error);
-            reject({
-              bgErr: bgErr,
-              message: error,
-            });
-          } else {
-            resolve(value && value.payload);
+            if (error) {
+              reject(new BackgroundError(error));
+            } else {
+              resolve(value && value.payload);
+            }
           }
         },
       );
