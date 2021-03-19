@@ -11,7 +11,20 @@ import _objectSpread from '@babel/runtime/helpers/objectSpread2';
 import { compose, createStore as createStore$1, applyMiddleware } from 'redux';
 import reduxThunk from 'redux-thunk';
 import { isDraft, current, Immer, original } from 'immer';
-import { Store } from 'webext-redux';
+import 'lodash.assignin';
+import {
+  PATCH_STATE_TYPE,
+  STATE_TYPE,
+  DISPATCH_TYPE,
+  DEFAULT_PORT_NAME,
+} from 'webext-redux/lib/constants';
+import {
+  withDeserializer,
+  withSerializer,
+  noop,
+} from 'webext-redux/lib/serialization';
+import shallowDiff from 'webext-redux/lib/strategies/shallowDiff/patch';
+import { getBrowserAPI } from 'webext-redux/lib/util';
 
 var StoreContext = createContext();
 
@@ -1763,6 +1776,252 @@ function extractDataFromModel(
   };
 }
 
+var backgroundErrPrefix =
+  '\nLooks like there is an error in the background page. ' +
+  'You might want to inspect your background page for more details.\n';
+var defaultOpts = {
+  portName: DEFAULT_PORT_NAME,
+  state: {},
+  extensionId: null,
+  serializer: noop,
+  deserializer: noop,
+  patchStrategy: shallowDiff,
+};
+var ProxyStore = /*#__PURE__*/ (function () {
+  /**
+   * Creates a new Proxy store
+   * @param  {object} options An object of form {portName, state, extensionId, serializer, deserializer, diffStrategy}, where `portName` is a required string and defines the name of the port for state transition changes, `state` is the initial state of this store (default `{}`) `extensionId` is the extension id as defined by browserAPI when extension is loaded (default `''`), `serializer` is a function to serialize outgoing message payloads (default is passthrough), `deserializer` is a function to deserialize incoming message payloads (default is passthrough), and patchStrategy is one of the included patching strategies (default is shallow diff) or a custom patching function.
+   */
+  function ProxyStore(_temp) {
+    var _this = this;
+
+    var _ref = _temp === void 0 ? defaultOpts : _temp,
+      _ref$portName = _ref.portName,
+      portName =
+        _ref$portName === void 0 ? defaultOpts.portName : _ref$portName,
+      _ref$state = _ref.state,
+      state = _ref$state === void 0 ? defaultOpts.state : _ref$state,
+      _ref$extensionId = _ref.extensionId,
+      extensionId =
+        _ref$extensionId === void 0
+          ? defaultOpts.extensionId
+          : _ref$extensionId,
+      _ref$serializer = _ref.serializer,
+      serializer =
+        _ref$serializer === void 0 ? defaultOpts.serializer : _ref$serializer,
+      _ref$deserializer = _ref.deserializer,
+      deserializer =
+        _ref$deserializer === void 0
+          ? defaultOpts.deserializer
+          : _ref$deserializer,
+      _ref$patchStrategy = _ref.patchStrategy,
+      patchStrategy =
+        _ref$patchStrategy === void 0
+          ? defaultOpts.patchStrategy
+          : _ref$patchStrategy;
+
+    if (!portName) {
+      throw new Error('portName is required in options');
+    }
+
+    if (typeof serializer !== 'function') {
+      throw new Error('serializer must be a function');
+    }
+
+    if (typeof deserializer !== 'function') {
+      throw new Error('deserializer must be a function');
+    }
+
+    if (typeof patchStrategy !== 'function') {
+      throw new Error(
+        'patchStrategy must be one of the included patching strategies or a custom patching function',
+      );
+    }
+
+    this.portName = portName;
+    this.readyResolved = false;
+    this.readyPromise = new Promise(function (resolve) {
+      return (_this.readyResolve = resolve);
+    });
+    this.browserAPI = getBrowserAPI();
+    this.extensionId = extensionId; // keep the extensionId as an instance variable
+
+    this.port = this.browserAPI.runtime.connect(this.extensionId, {
+      name: portName,
+    });
+    this.safetyHandler = this.safetyHandler.bind(this);
+
+    if (this.browserAPI.runtime.onMessage) {
+      this.safetyMessage = this.browserAPI.runtime.onMessage.addListener(
+        this.safetyHandler,
+      );
+    }
+
+    this.serializedPortListener = withDeserializer(deserializer)(function () {
+      var _this$port$onMessage;
+
+      return (_this$port$onMessage = _this.port.onMessage).addListener.apply(
+        _this$port$onMessage,
+        arguments,
+      );
+    });
+    this.serializedMessageSender = withSerializer(serializer)(function () {
+      var _this$browserAPI$runt;
+
+      return (_this$browserAPI$runt =
+        _this.browserAPI.runtime).sendMessage.apply(
+        _this$browserAPI$runt,
+        arguments,
+      );
+    }, 1);
+    this.listeners = [];
+    this.state = state;
+    this.patchStrategy = patchStrategy; // Don't use shouldDeserialize here, since no one else should be using this port
+
+    this.serializedPortListener(function (message) {
+      switch (message.type) {
+        case STATE_TYPE:
+          _this.replaceState(message.payload);
+
+          if (!_this.readyResolved) {
+            _this.readyResolved = true;
+
+            _this.readyResolve();
+          }
+
+          break;
+
+        case PATCH_STATE_TYPE:
+          _this.patchState(message.payload);
+
+          break;
+      }
+    });
+    this.dispatch = this.dispatch.bind(this); // add this context to dispatch
+  }
+  /**
+   * Returns a promise that resolves when the store is ready. Optionally a callback may be passed in instead.
+   * @param [function] callback An optional callback that may be passed in and will fire when the store is ready.
+   * @return {object} promise A promise that resolves when the store has established a connection with the background page.
+   */
+
+  var _proto = ProxyStore.prototype;
+
+  _proto.ready = function ready(cb) {
+    if (cb === void 0) {
+      cb = null;
+    }
+
+    if (cb !== null) {
+      return this.readyPromise.then(cb);
+    }
+
+    return this.readyPromise;
+  };
+  /**
+   * Subscribes a listener function for all state changes
+   * @param  {function} listener A listener function to be called when store state changes
+   * @return {function}          An unsubscribe function which can be called to remove the listener from state updates
+   */
+
+  _proto.subscribe = function subscribe(listener) {
+    var _this2 = this;
+
+    this.listeners.push(listener);
+    return function () {
+      _this2.listeners = _this2.listeners.filter(function (l) {
+        return l !== listener;
+      });
+    };
+  };
+  /**
+   * Replaces the state for only the keys in the updated state. Notifies all listeners of state change.
+   * @param {object} state the new (partial) redux state
+   */
+
+  _proto.patchState = function patchState(difference) {
+    this.state = this.patchStrategy(this.state, difference);
+    this.listeners.forEach(function (l) {
+      return l();
+    });
+  };
+  /**
+   * Replace the current state with a new state. Notifies all listeners of state change.
+   * @param  {object} state The new state for the store
+   */
+
+  _proto.replaceState = function replaceState(state) {
+    this.state = state;
+    this.listeners.forEach(function (l) {
+      return l();
+    });
+  };
+  /**
+   * Get the current state of the store
+   * @return {object} the current store state
+   */
+
+  _proto.getState = function getState() {
+    return this.state;
+  };
+  /**
+   * Stub function to stay consistent with Redux Store API. No-op.
+   */
+
+  _proto.replaceReducer = function replaceReducer() {
+    return;
+  };
+  /**
+   * Dispatch an action to the background using messaging passing
+   * @param  {object} data The action data to dispatch
+   * @return {Promise}     Promise that will resolve/reject based on the action response from the background
+   */
+
+  _proto.dispatch = function dispatch(data) {
+    var _this3 = this;
+
+    return new Promise(function (resolve, reject) {
+      _this3.serializedMessageSender(
+        _this3.extensionId,
+        {
+          type: DISPATCH_TYPE,
+          portName: _this3.portName,
+          payload: data,
+        },
+        null,
+        function (resp) {
+          var error = resp.error,
+            value = resp.value;
+
+          if (error) {
+            var bgErr = new Error('' + backgroundErrPrefix + error);
+            reject({
+              bgErr: bgErr,
+              message: error,
+            });
+          } else {
+            resolve(value && value.payload);
+          }
+        },
+      );
+    });
+  };
+
+  _proto.safetyHandler = function safetyHandler(message) {
+    if (message.action === 'storeReady' && message.portName === this.portName) {
+      // Remove Saftey Listener
+      this.browserAPI.runtime.onMessage.removeListener(this.safetyHandler); // Resolve if readyPromise has not been resolved.
+
+      if (!this.readyResolved) {
+        this.readyResolved = true;
+        this.readyResolve();
+      }
+    }
+  };
+
+  return ProxyStore;
+})();
+
 function createStore(model, options) {
   if (options === void 0) {
     options = {};
@@ -1910,7 +2169,7 @@ function createStore(model, options) {
   var store;
 
   if (isProxyStore) {
-    store = new Store(proxyStoreOptions);
+    store = new ProxyStore(proxyStoreOptions);
   } else {
     store = createStore$1(
       _r._i.reducer,

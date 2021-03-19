@@ -16,7 +16,7 @@ import { createComputedPropertiesMiddleware } from './computed-properties';
 import { createListenerMiddleware } from './listeners';
 import { clone } from './lib';
 import { createEffectsMiddleware } from './effects';
-import { Store } from 'webext-redux';
+import { ProxyStore } from './proxy-store';
 import { createAliasExecuterMiddleware } from './alias';
 
 export function createStore(model, options = {}) {
@@ -112,7 +112,7 @@ export function createStore(model, options = {}) {
 
   let store;
   if (isProxyStore) {
-    store = new Store(proxyStoreOptions);
+    store = new ProxyStore(proxyStoreOptions);
   } else {
     store = reduxCreateStore(
       _r._i.reducer,
