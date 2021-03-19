@@ -2060,6 +2060,25 @@ var easyPeasy = (function (
 
     return ProxyStore;
   })();
+  var enhancedPromiseResponder = function enhancedPromiseResponder(
+    dispatchResult,
+    send,
+  ) {
+    Promise.resolve(dispatchResult)
+      .then(function (res) {
+        send({
+          error: null,
+          value: res,
+        });
+      })
+      .catch(function (err) {
+        console.error(err);
+        send({
+          error: err.message.message || err.message,
+          value: null,
+        });
+      });
+  };
 
   function createStore(model, options) {
     if (options === void 0) {
@@ -2487,6 +2506,7 @@ var easyPeasy = (function (
   exports.createTransform = createTransform;
   exports.createTypedHooks = createTypedHooks;
   exports.debug = debug;
+  exports.enhancedPromiseResponder = enhancedPromiseResponder;
   exports.generic = generic;
   exports.persist = persist;
   exports.reducer = reducer;

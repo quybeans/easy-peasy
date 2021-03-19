@@ -1185,6 +1185,7 @@ export function alias<
 ): Thunk<Model, Payload, Injections, StoreModel, Result>;
 
 export const aliasExecuterMiddleware: Middleware;
+export const enhancedPromiseResponder: any;
 
 // #endregion
 

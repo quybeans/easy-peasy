@@ -216,3 +216,17 @@ export class ProxyStore {
     }
   }
 }
+
+export const enhancedPromiseResponder = (dispatchResult, send) => {
+  Promise.resolve(dispatchResult)
+    .then((res) => {
+      send({
+        error: null,
+        value: res,
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      send({ error: err.message.message || err.message, value: null });
+    });
+};
