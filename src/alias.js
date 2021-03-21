@@ -84,13 +84,9 @@ export function createAliasActionsCreator(def, _r, isProxyStore) {
     if (isPromise(result)) {
       return result.then((resolved) => {
         if (failure) {
-          if (!isProxyStore) {
-            dispatchFail(failure);
-          }
+          dispatchFail(failure);
         } else {
-          if (!isProxyStore) {
-            dispatchSuccess(resolved);
-          }
+          dispatchSuccess(resolved);
         }
         return resolved;
       });

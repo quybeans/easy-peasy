@@ -143,15 +143,9 @@ export default function extractDataFromModel(
           set(path, actionThunks, def.thunkHandler);
 
           // Create the "action creator" function
-          if (def[aliasSymbol]) {
-            def.actionCreator = createAliasActionsCreator(
-              def,
-              _r,
-              isProxyStore,
-            );
-          } else {
-            def.actionCreator = createThunkActionsCreator(def, _r);
-          }
+          def.actionCreator = def[aliasSymbol]
+            ? createAliasActionsCreator(def, _r, isProxyStore)
+            : createThunkActionsCreator(def, _r);
 
           // Create a bidirectional relationship of the def/actionCreator
           def.actionCreator.def = def;

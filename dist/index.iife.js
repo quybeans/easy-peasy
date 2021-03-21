@@ -1214,9 +1214,7 @@ var easyPeasy = (function (
       if (isPromise(result)) {
         return result.then(function (resolved) {
           {
-            if (!isProxyStore) {
-              dispatchSuccess(resolved);
-            }
+            dispatchSuccess(resolved);
           }
 
           return resolved;
@@ -1692,15 +1690,9 @@ var easyPeasy = (function (
 
             set(path, actionThunks, _def.thunkHandler); // Create the "action creator" function
 
-            if (_def[aliasSymbol]) {
-              _def.actionCreator = createAliasActionsCreator(
-                _def,
-                _r,
-                isProxyStore,
-              );
-            } else {
-              _def.actionCreator = createThunkActionsCreator(_def, _r);
-            } // Create a bidirectional relationship of the def/actionCreator
+            _def.actionCreator = _def[aliasSymbol]
+              ? createAliasActionsCreator(_def, _r, isProxyStore)
+              : createThunkActionsCreator(_def, _r); // Create a bidirectional relationship of the def/actionCreator
 
             _def.actionCreator.def = _def; // Register the action creator within the lookup map
 
