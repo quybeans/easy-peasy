@@ -42,7 +42,7 @@ const handleEventDispatchErrors = (type, dispatcher) => (...args) => {
   }
 };
 
-export function createAliasActionsCreator(def, _r) {
+export function createAliasActionsCreator(def, _r, isProxyStore) {
   const actionCreator = (payload) => {
     const dispatchStart = handleEventDispatchErrors(def.meta.startType, () =>
       _r.dispatch({
@@ -69,7 +69,9 @@ export function createAliasActionsCreator(def, _r) {
         }),
     );
 
-    dispatchStart();
+    if (!isProxyStore) {
+      dispatchStart();
+    }
 
     let failure = null;
 
@@ -82,9 +84,13 @@ export function createAliasActionsCreator(def, _r) {
     if (isPromise(result)) {
       return result.then((resolved) => {
         if (failure) {
-          dispatchFail(failure);
+          if (!isProxyStore) {
+            dispatchFail(failure);
+          }
         } else {
-          dispatchSuccess(resolved);
+          if (!isProxyStore) {
+            dispatchSuccess(resolved);
+          }
         }
         return resolved;
       });

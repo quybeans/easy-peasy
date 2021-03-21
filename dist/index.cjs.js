@@ -1165,7 +1165,7 @@ var handleEventDispatchErrors$1 = function handleEventDispatchErrors(
   };
 };
 
-function createAliasActionsCreator(def, _r) {
+function createAliasActionsCreator(def, _r, isProxyStore) {
   var actionCreator = function actionCreator(payload) {
     var dispatchStart = handleEventDispatchErrors$1(
       def.meta.startType,
@@ -1193,7 +1193,10 @@ function createAliasActionsCreator(def, _r) {
         });
       },
     );
-    dispatchStart();
+
+    if (!isProxyStore) {
+      dispatchStart();
+    }
 
     var result = _r.dispatch({
       type: def.meta.type,
@@ -1203,7 +1206,9 @@ function createAliasActionsCreator(def, _r) {
     if (isPromise(result)) {
       return result.then(function (resolved) {
         {
-          dispatchSuccess(resolved);
+          if (!isProxyStore) {
+            dispatchSuccess(resolved);
+          }
         }
 
         return resolved;
@@ -1674,9 +1679,15 @@ function extractDataFromModel(
 
           set(path, actionThunks, _def.thunkHandler); // Create the "action creator" function
 
-          _def.actionCreator = isProxyStore
-            ? createAliasActionsCreator(_def, _r)
-            : createThunkActionsCreator(_def, _r); // Create a bidirectional relationship of the def/actionCreator
+          if (_def[aliasSymbol]) {
+            _def.actionCreator = createAliasActionsCreator(
+              _def,
+              _r,
+              isProxyStore,
+            );
+          } else {
+            _def.actionCreator = createThunkActionsCreator(_def, _r);
+          } // Create a bidirectional relationship of the def/actionCreator
 
           _def.actionCreator.def = _def; // Register the action creator within the lookup map
 
