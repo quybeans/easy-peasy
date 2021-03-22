@@ -81,20 +81,20 @@ export function createAliasActionsCreator(def, _r) {
 
     if (isPromise(result)) {
       return result.then((resolved) => {
-        if (failure) {
-          dispatchFail(failure);
-        } else {
-          dispatchSuccess(resolved);
-        }
+        // if (failure) {
+        //   dispatchFail(failure);
+        // } else {
+        //   dispatchSuccess(resolved);
+        // }
         return resolved;
       });
     }
 
-    if (failure) {
-      dispatchFail(failure);
-    } else {
-      dispatchSuccess(result);
-    }
+    // if (failure) {
+    //   dispatchFail(failure);
+    // } else {
+    //   dispatchSuccess(result);
+    // }
 
     return result;
   };
